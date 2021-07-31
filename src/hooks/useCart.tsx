@@ -23,26 +23,69 @@ const CartContext = createContext<CartContextData>({} as CartContextData);
 
 export function CartProvider({ children }: CartProviderProps): JSX.Element {
   const [cart, setCart] = useState<Product[]>(() => {
-    // const storagedCart = Buscar dados do localStorage
+     const storagedCart = localStorage.getItem('@RocketShoes:cart')
 
-    // if (storagedCart) {
-    //   return JSON.parse(storagedCart);
-    // }
+     if (storagedCart) {
+       return JSON.parse(storagedCart);
+      }
 
     return [];
   });
 
+ 
   const addProduct = async (productId: number) => {
     try {
-      // TODO
+      // check if product exist in cart
+      const res = await api.get(`/stock/${productId}`)
+      const stock:Stock=res.data
+      let cartList:Product[]= [...cart]
+
+      const product=cartList.find((item)=>(item.id===productId ))
+
+
+// if product exist get me it amount else the amount is zero
+const currentAmount= product? product.amount:0
+   const newAmount=   currentAmount+1
+  if(newAmount>stock.amount){
+    toast.info("max of the stock")
+    return
+  }
+
+  if(product){
+
+   // change value directly cause it "let"
+    product.amount=newAmount
+  }
+  else{
+    const res=await api.get(`/products/${productId}`)
+const products:Product =res.data
+
+     const newProduct={
+       ...products,
+       amount:newAmount
+     }
+
+     cartList.push(newProduct)
+  }
+setCart(cartList)
+
+      // check product amount in stock api
+
+     //setproduct with new amount to cart
+     localStorage.setItem('@RocketShoes:cart', JSON.stringify(cart))
     } catch {
-      // TODO
+     toast.error('something bad happened')
     }
   };
 
   const removeProduct = (productId: number) => {
     try {
-      // TODO
+      
+      let cartList:Product[]= [...cart]
+
+      const index= cartList.map(product=>product.id ).indexOf(productId)
+cartList.splice(index,1)
+      setCart(cartList)
     } catch {
       // TODO
     }
@@ -53,9 +96,23 @@ export function CartProvider({ children }: CartProviderProps): JSX.Element {
     amount,
   }: UpdateProductAmount) => {
     try {
-      // TODO
+      const res = await api.get(`/stock/${productId}`)
+      const stock:Stock=res.data
+
+      if(amount > stock.amount){
+        toast.info("max of the stock")
+       
+        return
+      }
+
+      let cartList:Product[]= [...cart]
+
+      const product=cartList.find((item)=>(item.id===productId ))
+if(product) {product.amount= amount}
+
+setCart(cartList)
     } catch {
-      // TODO
+      toast.error('something bad happened')
     }
   };
 
